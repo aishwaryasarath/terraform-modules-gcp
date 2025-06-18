@@ -1,0 +1,50 @@
+name: Deploy to GCP
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  terraform:
+    name: Deploy Terraform to GCP
+    runs-on: ubuntu-latest
+
+    env:
+      PROJECT_ID: my-gcp-project
+      REGION: us-central1
+      ZONE: us-central1-a
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Google Cloud SDK
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+
+      # Step 3: Authenticate with Google Cloud
+      - name: Authenticate with Google Cloud
+        run: gcloud auth activate-service-account --key-file=${{ secrets.GCP_SA_KEY }}
+
+      # Step 4: Install Terraform
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.6
+
+      # Step 5: Initialize Terraform
+      - name: Terraform Init
+        run: terraform init
+
+      # Step 6: Terraform Plan
+      - name: Terraform Plan
+        run: terraform plan -var="project=${{ env.PROJECT_ID }}" -var="region=${{ env.REGION }}" -var="zone=${{ env.ZONE }}"
+
+      # Step 7: Terraform Apply
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var="project=${{ env.PROJECT_ID }}" -var="region=${{ env.REGION }}" -var="zone=${{ env.ZONE }}"
